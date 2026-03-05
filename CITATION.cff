@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Laconic"
+abstract: "Lossless markdown compression for LLM token optimization. Strips decorative structure — badges, HTML wrappers, table formatting — that costs tokens but carries no semantic value."
+authors:
+  - alias: copyleftdev
+repository-code: "https://github.com/copyleftdev/laconic"
+license: MIT
+version: 0.1.0
+date-released: "2026-03-04"
+keywords:
+  - llm
+  - token-optimization
+  - markdown
+  - compression
+  - rag
+  - prompt-engineering
+  - mcp
+  - rust
