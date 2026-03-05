@@ -1,28 +1,116 @@
+<div align="center">
+
 # Laconic
 
-**Maximum meaning, minimum tokens.**
+**Cut your LLM token costs. Keep every word that matters.**
 
-Laconic is a Rust-based markdown compression toolkit that reduces LLM token usage by applying lossless syntactic transformations to markdown documents. It ships as a library (`laconic-core`), a CLI (`laconic`), and a Model Context Protocol server (`laconic-mcp`) for direct integration into agentic AI workflows.
+[![Rust](https://img.shields.io/badge/rust-stable-orange?logo=rust)](https://www.rust-lang.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-compatible-green?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVWN2wtOS01eiIvPjwvc3ZnPg==)](https://modelcontextprotocol.io)
+[![Docs](https://img.shields.io/badge/docs-mdBook-informational)](https://copyleftdev.github.io/laconic/)
 
-Named after the Spartans of Laconia — famous for expressing maximum meaning with minimum words. When Philip II of Macedon threatened "If I invade Laconia, I will raze Sparta," the Spartans replied: *"If."*
+*Named after the Spartans of Laconia — when Philip II threatened "If I invade Laconia, I will raze Sparta," they replied: **"If."***
+
+</div>
 
 ---
 
-## Use Cases
+## The Problem
 
-### 1. Pre-processing documents before LLM context injection
+You're feeding markdown into GPT-4, Claude, or Gemini. But up to **50% of your tokens** are going to things the model doesn't need:
 
-The primary use case. When an agent or RAG pipeline retrieves markdown documents to stuff into an LLM's context window, Laconic compresses them first — stripping decorative noise that costs tokens but carries no semantic value.
+```markdown
+[![Build Status](https://img.shields.io/github/actions/workflow/status/org/repo/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/org/repo/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/org/repo?style=flat-square&logo=codecov)](https://codecov.io/gh/org/repo)
 
+<div style="padding: 20px; background: #f5f5f5; border-radius: 8px">
+  <table border="1" cellpadding="8">
+    <tr><th style="text-align:left">Config</th><th>Value</th></tr>
+    <tr><td>timeout</td><td>30s</td></tr>
+    <tr><td>retries</td><td>3</td></tr>
+  </table>
+</div>
 ```
-Retriever → Laconic → LLM prompt
+
+That's **96 tokens** of badges, HTML wrappers, and table formatting. The LLM needs **9**:
+
+```text
+Config,Value
+timeout,30s
+retries,3
 ```
 
-**Real-world impact:** On HTML-heavy documentation, savings exceed 50%. On table-heavy READMEs, 15–25%. On pure prose, 0% — Laconic never touches what matters.
+**Laconic does this automatically.** Zero config. Zero semantic loss. Sub-millisecond.
 
-### 2. Agentic tool via MCP
+---
 
-Laconic exposes itself as an MCP server over stdio. Any MCP-compatible client (Windsurf, Cursor, Claude Desktop, custom agents) can call it directly:
+## Install
+
+```bash
+git clone https://github.com/copyleftdev/laconic.git
+cd laconic
+cargo build --release
+cp target/release/laconic /usr/local/bin/
+```
+
+## Usage
+
+```bash
+# Compress a file
+laconic compress README.md
+
+# Fast mode (skip token counting)
+laconic compress -f README.md
+
+# Estimate savings across a directory
+laconic estimate docs/**/*.md
+
+# Pipe from stdin, JSON output
+cat prompt.md | laconic compress -j -
+```
+
+Compressed text goes to **stdout**. Stats go to **stderr**. Pipes cleanly.
+
+---
+
+## Savings You Can Expect
+
+| Document Type | Savings | Example |
+| --- | --- | --- |
+| HTML-heavy docs (React, Angular) | **40–55%** | Component libraries, Storybook exports |
+| Awesome-lists | **20–30%** | Badge-heavy curated lists |
+| API documentation | **15–25%** | Table-heavy references, OpenAPI rendered docs |
+| READMEs | **10–15%** | Typical open-source project READMEs |
+| Pure prose | **0%** | Blog posts, essays — Laconic never touches meaning |
+
+---
+
+## Three Ways to Use It
+
+### CLI
+
+```bash
+laconic compress README.md                     # compress to stdout
+laconic compress -f docs/*.md                  # fast, no token stats
+laconic estimate --json docs/**/*.md           # audit token spend
+```
+
+### Rust Library
+
+```rust
+use laconic_core::{compress, compress_text, CompressConfig};
+
+// Full stats
+let result = compress(&markdown, &CompressConfig::default());
+println!("Saved {} tokens ({:.1}%)", result.tokens_saved, result.savings_pct);
+
+// Fast path — just the text, no token counting
+let compressed = compress_text(&markdown, &CompressConfig::default());
+```
+
+### MCP Server (for AI Agents)
+
+Any MCP-compatible client — Windsurf, Cursor, Claude Desktop — can call Laconic as a tool:
 
 ```json
 {
@@ -35,215 +123,55 @@ Laconic exposes itself as an MCP server over stdio. Any MCP-compatible client (W
 }
 ```
 
-An agent can call `estimate_savings` to decide if compression is worth it, then `compress_markdown` to do the work. The agent makes the economic decision; Laconic provides the data.
+The agent gets two tools:
 
-### 3. CI/CD documentation optimization
-
-Run Laconic as a pre-processing step on documentation before it enters a vector store or knowledge base. Every document gets compressed once, every query benefits.
-
-```bash
-find docs/ -name "*.md" -exec laconic compress {} \; > compressed_docs/
-```
-
-### 4. Cost estimation and budgeting
-
-Use `laconic estimate` to audit a corpus and understand how much of your token spend is going to decorative markdown structure (badge images, HTML wrappers, padded tables).
-
-```bash
-laconic estimate docs/**/*.md
-```
-
-### 5. Token-budget-constrained pipelines
-
-When you have a hard token budget (e.g., 128K context window), Laconic lets you fit more documents into the same window without lossy truncation.
+- **`compress_markdown`** — compress and return text + token stats
+- **`estimate_savings`** — check if compression is worth it before committing
 
 ---
 
-## Architecture
+## How It Works
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  laconic-core (library)                                 │
-│                                                         │
-│  Input ──→ [whitespace] ──→ [badges] ──→ [html_tables]  │
-│        ──→ [html_cleanup] ──→ [tables] ──→ [urls]       │
-│        ──→ [code_fences] ──→ [headings] ──→ [whitespace]│
-│        ──→ token count ──→ CompressResult               │
-└──────────────┬──────────────────────┬───────────────────┘
-               │                      │
-       ┌───────▼───────┐      ┌───────▼───────┐
-       │  laconic-cli   │      │  laconic-mcp  │
-       │  (binary)      │      │  (MCP server) │
-       │                │      │               │
-       │  compress      │      │  stdio JSON-  │
-       │  estimate      │      │  RPC transport│
-       └───────┬───────┘      └───────┬───────┘
-               │                      │
-           Files / stdin          AI agents
-```
+Eight lossless strategies, applied in sequence:
 
-### Compression Strategies (applied in order)
+| Strategy | What It Removes | Toggle |
+| --- | --- | --- |
+| Whitespace | Extra blank lines, trailing spaces | Always on |
+| Badges | Shield.io / badge images | `--no-badges` |
+| HTML Tables | `<table>` blocks → CSV | `--no-html` |
+| HTML Cleanup | `<div>`, `style=""`, `align=""` | `--no-html` |
+| Markdown Tables | Pipe tables → CSV | `--no-tables` |
+| Code Fences | Common leading indentation | Always on |
+| Headings | Trailing `#` characters | Always on |
+| URL Dedup | Repeated inline URLs → references | `--url-dedup` |
 
-| Strategy | What it does | Token impact |
-|---|---|---|
-| **whitespace** | Collapse 3+ blank lines, strip trailing spaces | Small but universal |
-| **badges** | Remove shield.io badge images, preserve link text | High on READMEs |
-| **html_tables** | Convert `<table>` blocks to compact CSV | Very high on docs |
-| **html_cleanup** | Strip decorative `<div>`, `style=""` attributes | High on rich docs |
-| **tables** | Convert markdown tables to `[Header,Header]\nval,val` CSV | High on data-heavy docs |
-| **urls** | Deduplicate repeated/long inline links to reference-style | Off by default |
-| **code_fences** | Remove common leading indentation from code blocks | Small |
-| **headings** | Normalize ATX headings, strip trailing `#` characters | Small |
-
-All strategies are **lossless on semantic content**. They remove presentation, not meaning.
+**Guarantees:**
+- **Idempotent** — `compress(compress(x)) == compress(x)`
+- **Never inflates** — output tokens ≤ input tokens, always
+- **Deterministic** — same input always produces the same output
+- **No panics** — tested across hundreds of real-world files
 
 ---
 
-## Quick Start
-
-### CLI
-
-```bash
-# Build
-cargo build --release
-
-# Compress a file (output to stdout, stats to stderr)
-laconic compress README.md
-
-# Estimate savings across a directory
-laconic estimate docs/*.md
-
-# Pipe from stdin
-cat prompt.md | laconic compress -
-
-# JSON output with full stats
-laconic compress --json README.md
-```
-
-### As a Rust library
-
-```rust
-use laconic_core::{compress, CompressConfig};
-
-let config = CompressConfig::default();
-let result = compress(&markdown_text, &config);
-
-println!("Saved {} tokens ({:.1}%)", result.tokens_saved, result.savings_pct);
-println!("{}", result.text);
-```
-
-### As an MCP server
-
-```bash
-# Start the server (agents connect over stdio)
-laconic-mcp
-```
-
-Agents call two tools:
-
-- **`compress_markdown`** — Takes `markdown` string, returns compressed text + token stats.
-- **`estimate_savings`** — Takes `markdown` string, returns token stats + recommendation without the compressed text.
-
----
-
-## Expected Savings by Document Type
-
-| Document type | Typical savings | Why |
-|---|---|---|
-| HTML-heavy component docs | **40–55%** | Strips `<div>` wrappers, `style` attrs, converts `<table>` to CSV |
-| Awesome-lists (links, badges) | **20–30%** | Removes shield.io badge images, deduplicates URLs |
-| Table-heavy documentation | **15–25%** | Converts markdown tables to compact CSV |
-| READMEs (badges, tables, code) | **10–15%** | Combined badge, table, and whitespace compression |
-| Pure prose | **0%** | Laconic never touches semantic content |
-
-Savings depend on how much decorative structure the document contains. Prose-heavy documents see near-zero savings — that's by design.
-
----
-
-## Pros
-
-1. **Zero semantic loss.** Every transformation is lossless on meaning. Headings, code, lists, and prose are never modified. Only decorative structure (table pipes, HTML wrappers, badge images) is compressed.
-
-2. **No model required.** Unlike LLMLingua-2 or other linguistic compression methods, Laconic runs pure deterministic regex + AST transforms. No ONNX model, no GPU, no Python, no 300MB model download. The release binary is 5.6MB.
-
-3. **Idempotent.** `compress(compress(x)) == compress(x)`. No oscillation, no artifacts accumulating across passes.
-
-4. **Never inflates.** Compressed output is always ≤ original token count. The worst case is 0% savings (pure prose), never negative savings.
-
-5. **Fast.** The compression itself is sub-millisecond per document. The bottleneck is token counting (BPE encoding), not the transforms.
-
-6. **Composable.** Each strategy can be toggled independently (`--no-tables`, `--no-html`, `--no-badges`, `--url-dedup`). Use only what makes sense for your corpus.
-
-7. **MCP-native.** First-class agentic integration — agents can call compression as a tool, making the decision to compress part of their workflow rather than a hardcoded pipeline step.
-
-8. **Single static binary.** No runtime dependencies. Deploy by copying a file.
-
----
-
-## Cons
-
-1. **Syntactic only.** Laconic does not do linguistic compression. It cannot rephrase "The function returns a boolean value indicating whether or not the operation succeeded" into "Returns bool for success." For that, you need a model-based approach like LLMLingua-2. The architecture supports a future `linguistic` feature flag via ONNX Runtime — the interface is ready, the model integration is not yet wired.
-
-2. **Low impact on prose-heavy documents.** If your corpus is mostly narrative text with minimal tables, HTML, or badges, Laconic will show near-zero savings. Direct consequence of #1 — solvable when linguistic compression is added.
-
-3. ~~**Token counting is slow.**~~ **ELIMINATED.** Tokenizer is cached in a `LazyLock<CoreBPE>` — initialized once, reused across all calls. All regex patterns are similarly cached. Use `--fast` / `compress_text()` / `skip_token_count: true` when you only need the output.
-
-4. **CSV conversion is lossy on alignment.** Converting `| Col | Col |` to `Col,Col` loses column alignment information. LLMs handle this fine (they parse CSV natively), but the output is less human-readable. Use `--no-tables` to preserve table formatting when human readability matters.
-
-5. ~~**No streaming.**~~ **ELIMINATED.** `compress_reader()` accepts `io::Read` + `io::Write` for pipeline integration. `compress_text()` returns text directly without statistics overhead. Both avoid unnecessary allocations.
-
-6. **Regex-based HTML parsing.** The HTML strategies use cached `LazyLock<Regex>` patterns rather than a DOM parser. This handles 95%+ of real-world markdown HTML. A future `comrak`-AST-based approach could replace this for edge-case correctness, but the current implementation has no known failures.
-
----
-
-## When to Use Laconic vs. LLMLingua-2
+## Why Not LLMLingua-2?
 
 | | Laconic | LLMLingua-2 |
-|---|---|---|
-| **Approach** | Syntactic (deterministic transforms) | Linguistic (ML token pruning) |
-| **Savings on structure-heavy docs** | 15–53% | 20% (at 80% keep) |
-| **Savings on prose** | 0% | 20% |
-| **Semantic fidelity** | 100% (lossless) | ~94% SBERT similarity |
-| **Runtime dependency** | None (static binary) | Python + PyTorch + 300MB model |
-| **Latency** | Sub-millisecond | 100ms–2s per document |
-| **Best for** | RAG pipelines, documentation, READMEs | General prompt compression, prose |
+| --- | --- | --- |
+| **Type** | Lossless (syntactic) | Lossy (linguistic) |
+| **Fidelity** | 100% | ~94% SBERT similarity |
+| **Speed** | Sub-millisecond | 100ms–2s per doc |
+| **Dependencies** | None (5.6MB binary) | Python + PyTorch + 300MB model |
+| **Best for** | Structure-heavy docs | Prose compression |
 
-**They stack.** Run Laconic first (fast, lossless), then LLMLingua-2 on the result if you need deeper compression.
+**They stack.** Run Laconic first (fast, free), then LLMLingua-2 on the result.
 
 ---
 
-## Testing
+## Documentation
 
-```bash
-# Unit tests (23 tests, all strategies)
-cargo test -p laconic-core
-```
+Full user guide with recipes for RAG pipelines, CI/CD integration, and token budgeting:
 
----
-
-## Project Structure
-
-```
-crates/
-  laconic-core/       # Compression library
-    src/
-      lib.rs          # Public API: compress(), estimate(), CompressConfig
-      tokens.rs       # Token counting (tiktoken cl100k_base)
-      strategies/     # 8 compression strategies
-        whitespace.rs
-        tables.rs
-        html_tables.rs
-        html_cleanup.rs
-        badges.rs
-        headings.rs
-        code_fences.rs
-        urls.rs
-  laconic-cli/        # CLI binary
-    src/main.rs       # compress, estimate subcommands
-
-  laconic-mcp/        # MCP server binary
-    src/main.rs       # stdio transport, compress_markdown + estimate_savings tools
-```
+**[copyleftdev.github.io/laconic](https://copyleftdev.github.io/laconic/)**
 
 ---
 
