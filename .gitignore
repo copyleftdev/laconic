@@ -26,6 +26,9 @@ venv/
 node_modules/
 .wrangler/
 
+# mdBook build output
+docs/book/
+
 # OS
 .DS_Store
 Thumbs.db
