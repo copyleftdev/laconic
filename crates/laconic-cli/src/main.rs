@@ -8,8 +8,11 @@
 //! cat input.md | laconic compress -
 //! ```
 
+mod telemetry;
+
 use std::io::{self, Read};
 use std::path::PathBuf;
+use std::time::Instant;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -172,6 +175,9 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
+    let t0 = Instant::now();
+    let send_telemetry = telemetry::is_enabled();
+
     match cli.command {
         Commands::Compress {
             files,
@@ -183,20 +189,35 @@ fn main() -> Result<()> {
             fast,
         } => {
             let config = build_config(no_tables, no_html, no_badges, url_dedup, fast);
+            let mut total_in = 0usize;
+            let mut total_out = 0usize;
+            let file_count = files.len();
+
             for path in &files {
                 let (name, content) = read_input(path)?;
                 let result = compress(&content, &config);
+                total_in += result.original_tokens;
+                total_out += result.compressed_tokens;
                 if json {
                     print_result_json(&name, &result);
                 } else {
                     print_result_text(&name, &result);
                 }
             }
+
+            if send_telemetry {
+                let event = telemetry::build_event(
+                    "compress", file_count, total_in, total_out,
+                    t0.elapsed().as_millis(), fast,
+                );
+                telemetry::send(event);
+            }
         }
         Commands::Estimate { files, json } => {
             let config = CompressConfig::default();
             let mut total_orig = 0usize;
             let mut total_comp = 0usize;
+            let file_count = files.len();
 
             for path in &files {
                 let (name, content) = read_input(path)?;
@@ -221,6 +242,14 @@ fn main() -> Result<()> {
                 eprintln!(
                     "TOTAL: {total_orig} → {total_comp} tokens (saved {saved}, {pct:.1}%)"
                 );
+            }
+
+            if send_telemetry {
+                let event = telemetry::build_event(
+                    "estimate", file_count, total_orig, total_comp,
+                    t0.elapsed().as_millis(), false,
+                );
+                telemetry::send(event);
             }
         }
     }

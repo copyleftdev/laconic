@@ -1,0 +1,7 @@
+name = "laconic-telemetry"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "TELEMETRY"
+id = "PLACEHOLDER_KV_ID"

@@ -11,14 +11,19 @@ venv/
 # Research data and benchmarks
 /corpus/
 /samples/
-*.json
-!Cargo.lock
+/*_results.json
+/benchmark_results.json
+/linguistic_results.json
+/semantic_results.json
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Worker
+node_modules/
 
 # OS
 .DS_Store
