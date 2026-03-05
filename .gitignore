@@ -29,6 +29,10 @@ node_modules/
 # mdBook build output
 docs/book/
 
+# Auth tokens
+.mcpregistry_*
+.smithery_*
+
 # OS
 .DS_Store
 Thumbs.db
