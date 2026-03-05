@@ -3,6 +3,7 @@ title = "Laconic"
 description = "Maximum meaning, minimum tokens."
 authors = ["copyleftdev"]
 language = "en"
+multilingual = false
 src = "src"
 
 [build]
