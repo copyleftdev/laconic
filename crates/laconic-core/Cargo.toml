@@ -1,0 +1,19 @@
+[package]
+name = "laconic-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core markdown compression library — syntactic + linguistic strategies"
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+regex = "1"
+comrak = { version = "0.38", default-features = false }
+tiktoken-rs = "0.6"
+
+[dev-dependencies]
+pretty_assertions = "1"

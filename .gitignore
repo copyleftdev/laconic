@@ -1,0 +1,25 @@
+# Rust build artifacts
+/target/
+
+# Python research tooling (not part of core tool)
+*.py
+*.pyc
+__pycache__/
+.venv/
+venv/
+
+# Research data and benchmarks
+/corpus/
+/samples/
+*.json
+!Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

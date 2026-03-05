@@ -1,0 +1,21 @@
+[package]
+name = "laconic-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Laconic MCP server — expose markdown compression as tools for AI agents"
+
+[[bin]]
+name = "laconic-mcp"
+path = "src/main.rs"
+
+[dependencies]
+laconic-core.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+rmcp = { version = "0.16", features = ["server", "transport-io"] }
+schemars = "1"
