@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.copyleftdev/laconic",
+  "description": "Lossless markdown compression for LLM token optimization. Saves 15-55% on structure-heavy docs.",
+  "repository": {
+    "url": "https://github.com/copyleftdev/laconic",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "cargo",
+      "identifier": "laconic-mcp",
+      "version": "0.1.0",
+      "runtime": "rust",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "compress_markdown",
+      "description": "Compress markdown text by removing decorative structure (badges, HTML wrappers, table formatting). Returns compressed text with token statistics. Lossless on semantic content."
+    },
+    {
+      "name": "estimate_savings",
+      "description": "Estimate token savings from compression without producing output. Returns original/compressed token counts, savings percentage, and a recommendation."
+    }
+  ]
+}

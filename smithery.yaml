@@ -1,0 +1,30 @@
+name: laconic
+description: Lossless markdown compression for LLM token optimization. Strips badges, HTML, and table formatting. Saves 15-55% on structure-heavy docs.
+version: 0.1.0
+license: MIT
+
+runtime: custom
+startCommand:
+  command: laconic-mcp
+  args: []
+
+transport: stdio
+
+tools:
+  - name: compress_markdown
+    description: Compress markdown by removing decorative structure. Returns text + token stats.
+  - name: estimate_savings
+    description: Estimate token savings without producing compressed output.
+
+tags:
+  - markdown
+  - compression
+  - tokens
+  - llm
+  - rag
+  - prompt-engineering
+  - cost-optimization
+  - mcp
+
+repository: https://github.com/copyleftdev/laconic
+author: copyleftdev
