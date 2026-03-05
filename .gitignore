@@ -24,6 +24,7 @@ venv/
 
 # Worker
 node_modules/
+.wrangler/
 
 # OS
 .DS_Store
