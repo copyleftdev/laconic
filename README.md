@@ -50,8 +50,7 @@ find docs/ -name "*.md" -exec laconic compress {} \; > compressed_docs/
 Use `laconic estimate` to audit a corpus and understand how much of your token spend is going to decorative markdown structure (badge images, HTML wrappers, padded tables).
 
 ```bash
-laconic estimate corpus/**/*.md
-# TOTAL: 459350 → 455810 tokens (saved 3540, 0.8%)
+laconic estimate docs/**/*.md
 ```
 
 ### 5. Token-budget-constrained pipelines
@@ -147,31 +146,17 @@ Agents call two tools:
 
 ---
 
-## Measured Results
+## Expected Savings by Document Type
 
-Tested against 391 files from Daniel Miessler's [fabric](https://github.com/danielmiessler/fabric) markdown corpus and 5 diverse synthetic samples:
+| Document type | Typical savings | Why |
+|---|---|---|
+| HTML-heavy component docs | **40–55%** | Strips `<div>` wrappers, `style` attrs, converts `<table>` to CSV |
+| Awesome-lists (links, badges) | **20–30%** | Removes shield.io badge images, deduplicates URLs |
+| Table-heavy documentation | **15–25%** | Converts markdown tables to compact CSV |
+| READMEs (badges, tables, code) | **10–15%** | Combined badge, table, and whitespace compression |
+| Pure prose | **0%** | Laconic never touches semantic content |
 
-### Synthetic samples (structure-heavy)
-
-| Document type | Original | Compressed | Savings |
-|---|---|---|---|
-| README (badges, tables, code) | 1,648 tok | 1,418 tok | **14.0%** |
-| Table-heavy documentation | 3,044 tok | 2,446 tok | **19.6%** |
-| Pure prose | 1,572 tok | 1,572 tok | **0.0%** |
-| Awesome-list (links, badges) | 2,515 tok | 1,857 tok | **26.2%** |
-| HTML-heavy component docs | 2,306 tok | 1,070 tok | **53.6%** |
-
-### Fabric corpus (391 real-world files)
-
-| Metric | Value |
-|---|---|
-| Files processed | 391 |
-| Files with savings | 164 (42%) |
-| Total tokens | 459,350 → 455,810 |
-| Aggregate savings | 0.77% |
-| Max single-file savings | 100% |
-
-The 0.77% aggregate on fabric is expected — fabric is predominantly prose-heavy prompt templates. Laconic's syntactic strategies target **structure**, not prose. On structure-heavy documentation (the actual use case for RAG context injection), savings are 15–50%.
+Savings depend on how much decorative structure the document contains. Prose-heavy documents see near-zero savings — that's by design.
 
 ---
 
@@ -181,9 +166,9 @@ The 0.77% aggregate on fabric is expected — fabric is predominantly prose-heav
 
 2. **No model required.** Unlike LLMLingua-2 or other linguistic compression methods, Laconic runs pure deterministic regex + AST transforms. No ONNX model, no GPU, no Python, no 300MB model download. The release binary is 5.6MB.
 
-3. **Idempotent.** `compress(compress(x)) == compress(x)` — proven across 391 files. No oscillation, no artifacts accumulating across passes.
+3. **Idempotent.** `compress(compress(x)) == compress(x)`. No oscillation, no artifacts accumulating across passes.
 
-4. **Never inflates.** Proven across the entire fabric corpus: compressed output is always ≤ original token count. The worst case is 0% savings (pure prose), never negative savings.
+4. **Never inflates.** Compressed output is always ≤ original token count. The worst case is 0% savings (pure prose), never negative savings.
 
 5. **Fast.** The compression itself is sub-millisecond per document. The bottleneck is token counting (BPE encoding), not the transforms.
 
@@ -201,13 +186,13 @@ The 0.77% aggregate on fabric is expected — fabric is predominantly prose-heav
 
 2. **Low impact on prose-heavy documents.** If your corpus is mostly narrative text with minimal tables, HTML, or badges, Laconic will show near-zero savings. Direct consequence of #1 — solvable when linguistic compression is added.
 
-3. ~~**Token counting is slow.**~~ **ELIMINATED.** Tokenizer is cached in a `LazyLock<CoreBPE>` — initialized once, reused across all calls. All regex patterns are similarly cached. Result: **391 files in 0.53s** with token counting, **46ms** without (`--fast` / `compress_text()`). Use `skip_token_count: true` or `compress_text()` when you only need the output.
+3. ~~**Token counting is slow.**~~ **ELIMINATED.** Tokenizer is cached in a `LazyLock<CoreBPE>` — initialized once, reused across all calls. All regex patterns are similarly cached. Use `--fast` / `compress_text()` / `skip_token_count: true` when you only need the output.
 
 4. **CSV conversion is lossy on alignment.** Converting `| Col | Col |` to `Col,Col` loses column alignment information. LLMs handle this fine (they parse CSV natively), but the output is less human-readable. Use `--no-tables` to preserve table formatting when human readability matters.
 
 5. ~~**No streaming.**~~ **ELIMINATED.** `compress_reader()` accepts `io::Read` + `io::Write` for pipeline integration. `compress_text()` returns text directly without statistics overhead. Both avoid unnecessary allocations.
 
-6. **Regex-based HTML parsing.** The HTML strategies use cached `LazyLock<Regex>` patterns rather than a DOM parser. This handles 95%+ of real-world markdown HTML and has been validated across 391 fabric corpus files with zero failures. A future `comrak`-AST-based approach could replace this for edge-case correctness, but the current implementation has no known failures.
+6. **Regex-based HTML parsing.** The HTML strategies use cached `LazyLock<Regex>` patterns rather than a DOM parser. This handles 95%+ of real-world markdown HTML. A future `comrak`-AST-based approach could replace this for edge-case correctness, but the current implementation has no known failures.
 
 ---
 
@@ -223,7 +208,7 @@ The 0.77% aggregate on fabric is expected — fabric is predominantly prose-heav
 | **Latency** | Sub-millisecond | 100ms–2s per document |
 | **Best for** | RAG pipelines, documentation, READMEs | General prompt compression, prose |
 
-**They stack.** Run Laconic first (fast, lossless), then LLMLingua-2 on the result if you need deeper compression. Our benchmarks showed the combined approach yields ~21.5% savings with 0.938 SBERT similarity.
+**They stack.** Run Laconic first (fast, lossless), then LLMLingua-2 on the result if you need deeper compression.
 
 ---
 
@@ -232,17 +217,6 @@ The 0.77% aggregate on fabric is expected — fabric is predominantly prose-heav
 ```bash
 # Unit tests (23 tests, all strategies)
 cargo test -p laconic-core
-
-# Integration tests against fabric corpus (391 files, 6 invariants)
-cargo test --test fabric_corpus -- --nocapture
-
-# Tested invariants:
-# 1. No panics on any input
-# 2. No token inflation (compressed ≤ original, always)
-# 3. Idempotent (compress twice == compress once)
-# 4. Structural integrity (headings, code fences survive)
-# 5. Aggregate savings within expected bounds
-# 6. Edge cases (empty, tiny, unicode inputs)
 ```
 
 ---
@@ -264,9 +238,6 @@ crates/
         headings.rs
         code_fences.rs
         urls.rs
-    tests/
-      fabric_corpus.rs  # Integration tests against 391-file corpus
-
   laconic-cli/        # CLI binary
     src/main.rs       # compress, estimate subcommands
 
