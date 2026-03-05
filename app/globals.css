@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* GitHub-inspired light theme */
+  --background: 0 0% 100%;
+  --foreground: 210 11% 15%;
+  --card: 210 20% 98%;
+  --card-foreground: 210 11% 15%;
+  --primary: 212 92% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 14% 96%;
+  --secondary-foreground: 210 11% 25%;
+  --muted: 210 14% 96%;
+  --muted-foreground: 210 11% 45%;
+  --accent: 212 92% 45%;
+  --accent-foreground: 0 0% 100%;
+  --border: 210 14% 89%;
+  --ring: 212 92% 45%;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 216 18% 11%;
+    --foreground: 210 14% 93%;
+    --card: 216 18% 14%;
+    --card-foreground: 210 14% 93%;
+    --primary: 212 92% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 18% 18%;
+    --secondary-foreground: 210 14% 83%;
+    --muted: 216 18% 18%;
+    --muted-foreground: 210 11% 55%;
+    --accent: 212 92% 55%;
+    --accent-foreground: 0 0% 100%;
+    --border: 216 18% 22%;
+    --ring: 212 92% 55%;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus visible outlines for accessibility */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Code highlighting */
+pre {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+:not(pre) > code {
+  background: hsl(var(--secondary));
+  padding: 0.2em 0.4em;
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.85em;
+}
+
+/* Table styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid hsl(var(--border));
+}
+
+th {
+  background: hsl(var(--secondary));
+  font-weight: 600;
+}
+
+tr:hover {
+  background: hsl(var(--secondary) / 0.5);
+}
+
+/* Kinetic link underlines */
+a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  position: relative;
+}
+
+.prose a::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prose a:hover::after {
+  width: 100%;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, [role="button"] {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active, [role="button"]:active {
+  transform: scale(0.98);
+}
+
+/* Selection color */
+::selection {
+  background: hsl(var(--primary) / 0.2);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Prose enhancements */
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.prose h1 { font-size: 2rem; margin-top: 0; margin-bottom: 1rem; }
+.prose h2 { font-size: 1.5rem; margin-top: 2rem; margin-bottom: 0.75rem; }
+.prose h3 { font-size: 1.25rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+
+.prose p {
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.prose ul, .prose ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+
+.prose blockquote {
+  border-left: 3px solid hsl(var(--primary));
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Highlight.js overrides */
+.hljs {
+  background: transparent !important;
+}
