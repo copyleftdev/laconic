@@ -33,6 +33,9 @@ docs/book/
 .mcpregistry_*
 .smithery_*
 
+# Private tools
+tools/
+
 # OS
 .DS_Store
 Thumbs.db
