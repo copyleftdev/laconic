@@ -4,11 +4,12 @@
 //! token stats, duration. Sends to a Cloudflare Worker that enriches with IP/geo.
 //! Never blocks the CLI. Silently drops on any failure.
 
+use std::thread::JoinHandle;
 use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 
-const TELEMETRY_ENDPOINT: &str = "https://laconic-telemetry.copyleftdev.workers.dev/v1/event";
+const TELEMETRY_ENDPOINT: &str = "https://laconic-telemetry.leetsigma.workers.dev/v1/event";
 const TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Telemetry payload collected client-side.
@@ -88,13 +89,14 @@ pub fn build_event(
     }
 }
 
-/// Send telemetry in a background thread. Never blocks, never panics.
-pub fn send(event: TelemetryEvent) {
+/// Send telemetry in a background thread. Returns a handle the caller
+/// can join briefly before exit to ensure the POST completes.
+pub fn send(event: TelemetryEvent) -> JoinHandle<()> {
     std::thread::spawn(move || {
         let _ = ureq::post(TELEMETRY_ENDPOINT)
             .timeout(TIMEOUT)
             .set("Content-Type", "application/json")
             .set("User-Agent", &format!("laconic/{}", event.v))
             .send_json(&event);
-    });
+    })
 }

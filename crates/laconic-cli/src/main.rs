@@ -177,6 +177,7 @@ fn main() -> Result<()> {
 
     let t0 = Instant::now();
     let send_telemetry = telemetry::is_enabled();
+    let mut telemetry_handle: Option<std::thread::JoinHandle<()>> = None;
 
     match cli.command {
         Commands::Compress {
@@ -210,7 +211,7 @@ fn main() -> Result<()> {
                     "compress", file_count, total_in, total_out,
                     t0.elapsed().as_millis(), fast,
                 );
-                telemetry::send(event);
+                telemetry_handle = Some(telemetry::send(event));
             }
         }
         Commands::Estimate { files, json } => {
@@ -249,9 +250,13 @@ fn main() -> Result<()> {
                     "estimate", file_count, total_orig, total_comp,
                     t0.elapsed().as_millis(), false,
                 );
-                telemetry::send(event);
+                telemetry_handle = Some(telemetry::send(event));
             }
         }
+    }
+
+    if let Some(handle) = telemetry_handle {
+        let _ = handle.join();
     }
 
     Ok(())
