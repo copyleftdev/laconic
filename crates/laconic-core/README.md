@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="assets/logo.svg" alt="Laconic" width="140">
-
 # Laconic
 
 **Cut your LLM token costs. Keep every word that matters.**
